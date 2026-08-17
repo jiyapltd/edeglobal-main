@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDE GLOBAL | Admin Panel</title>
+
+    <meta name="robots" content="noindex, nofollow">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-void: #030303;
+            --gold-primary: #D4AF37;
+            --text-white: #F0F0F0;
+        }
+        body {
+            background-color: var(--bg-void);
+            color: var(--text-white);
+            font-family: 'Manrope', sans-serif;
+            padding: 20px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        input, textarea, select {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 { color: var(--gold-primary); }
+        
+        /* Login Form */
+        #login-panel {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            background: #111;
+            border: 1px solid #333;
+            color: #fff;
+        }
+        button {
+            padding: 10px 20px;
+            background: var(--gold-primary);
+            border: none;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        /* Dashboard */
+        #dashboard { display: none; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th { color: var(--gold-primary); }
+        
+        select {
+            background: #111;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 5px;
+        }
+        
+        .status-Pending { color: #FFA500; }
+        .status-Reviewed { color: #3498db; }
+        .status-Completed { color: #2ecc71; }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        /* Sliding Captcha */
+        .captcha-container {
+            position: relative;
+            width: 100%;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 25px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .slider-track {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slider-text {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #888;
+            transition: opacity 0.3s;
+        }
+
+        .slider-handle {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 46px;
+            height: 46px;
+            background-color: var(--gold-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            z-index: 2;
+            transition: background-color 0.3s;
+        }
+
+        .slider-handle:active {
+            cursor: grabbing;
+        }
+
+        .slider-handle .arrow {
+            color: #000;
+            font-weight: bold;
+        }
+
+        .slider-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0;
+            background-color: rgba(212, 175, 55, 0.2);
+            z-index: 1;
+        }
+
+        .captcha-container.verified .slider-handle {
+            background-color: #4CAF50; /* Success Green */
+            left: calc(100% - 48px) !important; /* Lock to end */
+        }
+
+        .captcha-container.verified .slider-text {
+            opacity: 0;
+        }
+
+        .captcha-container.verified::after {
+            content: 'Verified';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #4CAF50;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Login -->
+    <div id="login-panel">
+        <h2>Admin Login</h2>
+        <input type="text" id="script-url" placeholder="Web App URL (https://script.google.com/macros/s/AKfycbxG_Li05uH3djsKIVPKq3_h5dKN1wK35VQDYOE2teL_QPoJODrXim7HOcqHTO8sID3HKw/exec)" value="">
+        <input type="password" id="password" placeholder="Password" value="">
+        
+        <!-- Sliding Captcha -->
+        <div class="captcha-container" id="captcha-container">
+            <div class="slider-track">
+                <div class="slider-text">Slide to Verify</div>
+            </div>
+            <div class="slider-handle" id="slider-handle">
+                <span class="arrow">→</span>
+            </div>
+            <div class="slider-overlay" id="slider-overlay"></div>
+        </div>
+
+        <button id="login-btn" disabled>Login</button>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard">
+        <div class="toolbar">
+            <h1>Inquiries Dashboard</h1>
+            <button onclick="downloadCSV()">Download CSV</button>
+        </div>
+        <div id="loading">Loading data...</div>
+        <table id="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Service</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let scriptURL = localStorage.getItem('omega_script_url') || '';
+    let password = '';
+    let allData = [];
+
+    if (scriptURL) document.getElementById('script-url').value = scriptURL;
+
+    // --- Sliding Captcha Logic ---
+    const sliderHandle = document.getElementById("slider-handle");
+    const sliderContainer = document.getElementById("captcha-container");
+    const sliderOverlay = document.getElementById("slider-overlay");
+    const loginBtn = document.getElementById("login-btn");
+    let isDragging = false;
+    let startX = 0;
+    let isVerified = false;
+
+    sliderHandle.addEventListener("mousedown", (e) => {
+        if (isVerified) return;
+        isDragging = true;
+        startX = e.clientX;
+        sliderContainer.classList.add("active");
+    });
+
+    window.addEventListener("mousemove", (e) => {
+        if (!isDragging || isVerified) return;
+
+        const containerRect = sliderContainer.getBoundingClientRect();
+        const maxMove = containerRect.width - sliderHandle.offsetWidth - 4; // 4px padding
+        
+        let moveX = e.clientX - startX;
+        
+        if (moveX < 0) moveX = 0;
+        if (moveX > maxMove) moveX = maxMove;
+
+        sliderHandle.style.transform = `translateX(${moveX}px)`;
+        sliderOverlay.style.width = `${moveX + 20}px`; // Visual fill
+
+        // Check if completed
+        if (moveX >= maxMove - 5) {
+            verifyCaptcha();
+        }
+    });
+
+    window.addEventListener("mouseup", () => {
+        if (!isDragging || isVerified) return;
+        isDragging = false;
+        
+        // Reset if not verified
+        if (!isVerified) {
+            sliderHandle.style.transition = "transform 0.5s ease";
+            sliderOverlay.style.transition = "width 0.5s ease";
+            sliderHandle.style.transform = "translateX(0px)";
+            sliderOverlay.style.width = "0";
+            
+            setTimeout(() => {
+                sliderHandle.style.transition = "";
+                sliderOverlay.style.transition = "";
+            }, 500);
+        }
+    });
+
+    function verifyCaptcha() {
+        isVerified = true;
+        isDragging = false;
+        sliderContainer.classList.add("verified");
+        loginBtn.removeAttribute("disabled");
+        
+        // Visual success feedback
+        sliderHandle.style.backgroundColor = "#4CAF50";
+        sliderHandle.innerHTML = "✓";
+    }
+
+    loginBtn.addEventListener('click', login);
+
+    function login() {
+        if (!isVerified) return;
+
+        scriptURL = document.getElementById('script-url').value;
+        password = document.getElementById('password').value;
+        
+        if (!scriptURL || !password) {
+            alert("Please enter URL and Password");
+            return;
+        }
+
+        localStorage.setItem('omega_script_url', scriptURL);
+        document.getElementById('login-panel').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        
+        loadData();
+    }
+
+    function loadData() {
+        // JSONP Fetch
+        const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+        window[callbackName] = function(data) {
+            delete window[callbackName];
+            document.body.removeChild(script);
+            renderTable(data);
+        };
+
+        const script = document.createElement('script');
+        script.src = `${scriptURL}?action=read&password=${encodeURIComponent(password)}&callback=${callbackName}`;
+        script.onerror = () => alert("Error loading data. Check URL/Password.");
+        document.body.appendChild(script);
+    }
+
+    function escapeHtml(text) {
+        if (text == null) return "";
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function renderTable(response) {
+        const tbody = document.getElementById('table-body');
+        document.getElementById('loading').style.display = 'none';
+        tbody.innerHTML = '';
+
+        if (response.result === 'error') {
+            alert(response.error);
+            location.reload();
+            return;
+        }
+
+        allData = response.data; // Store for CSV
+
+        response.data.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            const date = new Date(row.timestamp).toLocaleDateString();
+            
+            // Safe rendering using escapeHtml
+            tr.innerHTML = `
+                <td>${escapeHtml(date)}</td>
+                <td>${escapeHtml(row.name)}</td>
+                <td><a href="mailto:${escapeHtml(row.email)}" style="color:#fff">${escapeHtml(row.email)}</a></td>
+                <td>${escapeHtml(row.service)}</td>
+                <td>${escapeHtml(row.subject)}</td>
+                <td>
+                    <select onchange="updateStatus(${row.row}, this.value)" class="status-${escapeHtml(row.status)}">
+                        <option value="Pending" ${row.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                        <option value="Reviewed" ${row.status === 'Reviewed' ? 'selected' : ''}>Reviewed</option>
+                        <option value="Completed" ${row.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                    </select>
+                </td>
+                <td><button class="view-btn" data-index="${index}" style="padding:5px; font-size:0.8rem">View Msg</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Attach event listeners for view buttons to avoid inline JS issues
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = this.getAttribute('data-index');
+                viewDetails(allData[index].message);
+            });
+        });
+    }
+
+    function updateStatus(rowIndex, newStatus) {
+        // Use fetch for POST (no-cors mode, we assume success for simplicity in this basic admin)
+        // Or use a hidden iframe form submission to avoid CORS errors if we want to be sure.
+        // Here we use the same JSONP trick but for 'update' action? No, JSONP is GET only.
+        // We'll use fetch with no-cors. We won't get a response, but it will execute.
+        
+        const formData = new FormData();
+        formData.append('action', 'update');
+        formData.append('password', password);
+        formData.append('row', rowIndex);
+        formData.append('status', newStatus);
+
+        fetch(scriptURL, {
+            method: 'POST',
+            body: formData,
+            mode: 'no-cors' 
+        }).then(() => {
+            // Optimistic UI update
+            console.log("Status updated");
+        }).catch(err => alert("Update failed"));
+    }
+
+    function viewDetails(msg) {
+        alert("Message:\n\n" + msg);
+    }
+
+    function downloadCSV() {
+        if (!allData.length) return;
+        
+        const headers = ["Timestamp", "Name", "Email", "Phone", "Service", "Subject", "Message", "Status"];
+        const csvRows = [headers.join(',')];
+
+        allData.forEach(row => {
+            const values = [
+                row.timestamp,
+                row.name,
+                row.email,
+                row.phone,
+                row.service,
+                row.subject,
+                `"${row.message.replace(/"/g, '""')}"`, // Escape quotes
+                row.status
+            ];
+            csvRows.push(values.join(','));
+        });
+
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'inquiries.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    </script>
+
+</body>
+</html>
